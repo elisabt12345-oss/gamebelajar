@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bidik Kata 印尼语射击</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#06231f; --paper:#fff4dc; --red:#d6202f; --green:#3fe0a8; --gold:#ffc94d;
+  --sans:system-ui,-apple-system,"PingFang SC","Microsoft YaHei","Noto Sans SC","Segoe UI",Roboto,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+body{margin:0;height:100%;background:#06231f;color:var(--paper);font-family:var(--sans);overflow:hidden;touch-action:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hud{position:fixed;left:0;right:0;pointer-events:none;z-index:5}
+#top{top:0;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.stat{font-size:12px;line-height:1.3}
+.stat b{font-size:22px;color:var(--gold);display:block}
+#lives{font-size:20px;color:var(--red);letter-spacing:2px;text-align:right}
+#prompt{position:fixed;top:calc(env(safe-area-inset-top,0px) + 58px);left:50%;transform:translateX(-50%);width:min(92vw,520px);text-align:center;z-index:5;pointer-events:none;
+  background:rgba(6,35,31,.82);border:2px solid var(--gold);border-radius:8px;padding:8px 12px 10px}
+#pl{font-size:12px;opacity:.85}
+#pt{font-size:26px;font-weight:800;color:#fff;line-height:1.25;margin:2px 0 4px;word-break:break-word}
+#ps{font-size:14px;color:var(--gold);margin-bottom:4px}
+#bar{height:5px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden}
+#barf{height:100%;width:100%;background:var(--green)}
+#cross{position:fixed;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;z-index:4;pointer-events:none}
+#cross:before,#cross:after{content:"";position:absolute;background:var(--paper);opacity:.9}
+#cross:before{left:12px;top:0;width:2px;height:26px}#cross:after{top:12px;left:0;height:2px;width:26px}
+#cross i{position:absolute;inset:8px;border:2px solid var(--red);border-radius:50%}
+#toast{position:fixed;left:50%;top:60%;transform:translateX(-50%);width:min(92vw,480px);text-align:center;z-index:6;font-size:16px;font-weight:600;
+  padding:8px 12px;border-radius:8px;background:rgba(6,35,31,.9);border:2px solid var(--green);opacity:0;transition:opacity .18s;pointer-events:none}
+#toast.bad{border-color:var(--red)}#toast.show{opacity:1}
+#bottom{bottom:calc(env(safe-area-inset-bottom,0px) + 10px);padding:0 12px;display:flex;justify-content:center;gap:16px;font-size:12px}
+#combo b,#okb{font-size:20px}
+#combo b{color:var(--gold)}#okb{color:var(--green)}
+#en{width:110px;height:8px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden;margin-top:6px}
+#enf{height:100%;width:100%;background:#59a9ff}
+#hurt,#focusfx{position:fixed;inset:0;pointer-events:none;z-index:3;opacity:0}
+#hurt{background:radial-gradient(circle,transparent 40%,rgba(214,32,47,.75));transition:opacity .35s}
+#focusfx{background:radial-gradient(circle,transparent 45%,rgba(89,169,255,.35));transition:opacity .2s}
+.ov{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);
+  background:radial-gradient(circle at 50% 30%,#0f5a4c,#06231f 70%)}
+.ov.hide{display:none}
+.card{width:min(100%,520px);max-height:100%;overflow:auto;text-align:center}
+.seal{display:inline-flex;width:84px;height:84px;align-items:center;justify-content:center;background:var(--red);color:#fff;font-size:38px;font-weight:900;border-radius:10px;transform:rotate(-6deg);box-shadow:0 0 0 3px var(--paper) inset}
+h1{font-size:34px;margin:14px 0 2px;color:var(--paper)}
+.sub{opacity:.88;margin:0 0 14px;font-size:15px}
+.how{text-align:left;font-size:14px;line-height:1.6;background:rgba(0,0,0,.3);border-left:4px solid var(--gold);padding:10px 14px;margin:0 0 16px}
+.how p{margin:0 0 6px}
+button.go{font-family:var(--sans);font-size:22px;font-weight:800;padding:12px 34px;border:0;border-radius:8px;background:var(--gold);color:#2a1d00;cursor:pointer}
+button.go:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#miss{text-align:left;margin:12px 0;max-height:34vh;overflow:auto;font-size:14px}
+#miss div{display:flex;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.12)}
+#miss b{font-size:17px;min-width:110px;color:var(--gold)}
+.tc{position:fixed;z-index:7;display:none}
+.touch .tc{display:block}
+.btn{position:fixed;z-index:8;border-radius:50%;display:none;align-items:center;justify-content:center;font-weight:900;border:3px solid var(--paper);background:rgba(214,32,47,.6);color:#fff}
+.touch .btn{display:flex}
+#bf{right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);width:84px;height:84px;font-size:30px}
+#bz{right:22px;bottom:calc(env(safe-area-inset-bottom,0px) + 118px);width:60px;height:60px;font-size:20px;background:rgba(89,169,255,.5)}
+#jb{left:24px;bottom:calc(env(safe-area-inset-bottom,0px) + 30px);width:110px;height:110px;border:2px solid rgba(255,244,220,.5);border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none}
+#jk{position:absolute;left:35px;top:35px;width:40px;height:40px;border-radius:50%;background:rgba(255,244,220,.6)}
+@media (prefers-reduced-motion:reduce){#toast,#hurt,#focusfx{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hurt"></div><div id="focusfx"></div>
+<div id="cross"><i></i></div>
+
+<div class="hud" id="top">
+  <div class="stat">分数 Skor<b id="score">0</b></div>
+  <div class="stat" style="text-align:center">等级 Level<b id="lvl">1</b></div>
+  <div class="stat"><span style="display:block;text-align:right">生命 Nyawa</span><div id="lives"></div></div>
+</div>
+<div id="prompt"><div id="pl"></div><div id="pt"></div><div id="ps"></div><div id="bar"><div id="barf"></div></div></div>
+<div id="toast"></div>
+<div class="hud" id="bottom">
+  <div id="combo">连击 Kombo <b id="cb">0</b></div>
+  <div>专注 Fokus (Shift)<div id="en"><div id="enf"></div></div></div>
+  <div>答对 Benar <b id="okb"><span id="ok">0</span></b></div>
+</div>
+
+<div class="tc" id="jb"><div id="jk"></div></div>
+<div class="btn" id="bf">射</div>
+<div class="btn" id="bz">慢</div>
+
+<div class="ov" id="start">
+  <div class="card">
+    <div class="seal">ID</div>
+    <h1>Bidik Kata</h1>
+    <p class="sub">印尼语射击 · 用第一人称射击游戏学印尼语</p>
+    <div class="how">
+      <p><b>玩法。</b>屏幕上方出现题目：中文意思、印尼语单词，或者填空句子。四张卡片会飘向你，射中正确的那一张。</p>
+      <p><b>射错</b>、被卡片碰到、时间到，都会失去1条命。每答对5题加1条命（最多5条）。</p>
+      <p><b>专注</b>可以减慢时间，帮你思考。能量会自动恢复。答对时会朗读印尼语。</p>
+      <p id="ctl-d"><b>操作。</b>点击屏幕锁定鼠标。WASD 移动，鼠标瞄准，左键射击，Shift 专注。</p>
+      <p id="ctl-t" style="display:none"><b>操作。</b>左边摇杆移动，右边滑动瞄准，点一下射击。按钮：射 = 开枪，慢 = 专注。</p>
+    </div>
+    <button class="go" id="go">开始 Mulai</button>
+    <p class="sub" style="margin-top:14px;font-size:13px">最高分 Rekor: <b id="best">0</b></p>
+  </div>
+</div>
+
+<div class="ov hide" id="over">
+  <div class="card">
+    <div class="seal">完</div>
+    <h1>游戏结束 Selesai</h1>
+    <p class="sub" id="sum"></p>
+    <div id="miss"></div>
+    <button class="go" id="again">再来 Main lagi</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ===== DATA: [kata Indonesia, arti Mandarin, kalimat dengan ___, terjemahan kalimat]. Tambah baris baru untuk memperluas. ===== */
+const W=[
+["makan","吃","Saya ___ nasi setiap pagi.","我每天早上吃饭。"],
+["minum","喝","Dia suka ___ teh panas.","她喜欢喝热茶。"],
+["tidur","睡觉","Adik saya sudah ___.","我弟弟已经睡了。"],
+["pergi","去","Kami akan ___ ke pasar.","我们要去市场。"],
+["datang","来","Teman saya ___ jam tujuh.","我朋友七点来。"],
+["pulang","回家","Ayah ___ dari kantor sore hari.","爸爸下午下班回家。"],
+["belajar","学习","Saya ___ bahasa Indonesia.","我学习印尼语。"],
+["bekerja","工作","Ibu ___ di rumah sakit.","妈妈在医院工作。"],
+["membaca","阅读","Dia suka ___ buku.","他喜欢读书。"],
+["menulis","写","Tolong ___ nama Anda di sini.","请在这里写下您的名字。"],
+["berbicara","说话","Dia pandai ___ bahasa Inggris.","他很会说英语。"],
+["mendengar","听","Saya tidak bisa ___ suaramu.","我听不到你的声音。"],
+["melihat","看","Coba ___ gambar ini.","请看这张图。"],
+["membeli","买","Saya ingin ___ baju baru.","我想买新衣服。"],
+["menjual","卖","Dia ___ buah di pasar.","他在市场卖水果。"],
+["membantu","帮助","Bisakah kamu ___ saya?","你能帮我吗？"],
+["mencari","寻找","Saya sedang ___ kunci.","我在找钥匙。"],
+["menunggu","等待","Kami ___ bus di halte.","我们在车站等公交车。"],
+["bermain","玩","Anak-anak ___ di taman.","孩子们在公园玩。"],
+["berjalan","走路","Kami ___ kaki ke sekolah.","我们步行去学校。"],
+["memasak","做饭","Nenek ___ sayur di dapur.","奶奶在厨房煮菜。"],
+["mandi","洗澡","Saya ___ setiap sore.","我每天傍晚洗澡。"],
+["membuka","打开","Tolong ___ pintunya.","请把门打开。"],
+["menutup","关上","Dia ___ jendela karena hujan.","因为下雨，他关上了窗。"],
+["tinggal","居住","Kami ___ di Jakarta.","我们住在雅加达。"],
+["suka","喜欢","Saya ___ musik.","我喜欢音乐。"],
+["mau","想要","Kamu ___ minum apa?","你想喝什么？"],
+["tahu","知道","Saya tidak ___ jawabannya.","我不知道答案。"],
+["mengerti","明白","Apakah kamu ___?","你明白吗？"],
+["lupa","忘记","Maaf, saya ___ namamu.","抱歉，我忘了你的名字。"],
+["ingat","记得","Saya masih ___ wajahnya.","我还记得他的脸。"],
+["takut","害怕","Anak itu ___ pada anjing.","那个孩子怕狗。"],
+["senang","高兴","Saya ___ bertemu denganmu.","见到你我很高兴。"],
+["sedih","难过","Dia ___ karena kucingnya hilang.","她因为猫走丢了而难过。"],
+["marah","生气","Guru ___ karena kami terlambat.","老师因为我们迟到而生气。"],
+["lapar","饿","Saya sangat ___.","我很饿。"],
+["haus","口渴","Cuaca panas, saya ___.","天气热，我口渴。"],
+["lelah","累","Setelah bekerja, dia merasa ___.","工作后他觉得很累。"],
+["sakit","生病","Dia tidak masuk sekolah karena ___.","他因为生病没去上学。"],
+["sehat","健康","Makan sayur membuat badan ___.","吃蔬菜让身体健康。"],
+["besar","大","Rumah itu sangat ___.","那栋房子很大。"],
+["kecil","小","Kucing ini masih ___.","这只猫还很小。"],
+["panjang","长","Sungai itu sangat ___.","那条河很长。"],
+["pendek","短","Rambutnya ___.","她的头发很短。"],
+["tinggi","高","Gunung itu ___ sekali.","那座山很高。"],
+["rendah","低","Harga di sini ___.","这里的价格很低。"],
+["baru","新","Saya punya sepatu ___.","我有一双新鞋。"],
+["lama","很久","Kami menunggu sangat ___.","我们等了很久。"],
+["mahal","贵","Tas ini terlalu ___.","这个包太贵了。"],
+["murah","便宜","Di pasar, buahnya ___.","市场里的水果很便宜。"],
+["cepat","快","Kereta itu berjalan ___.","那列火车开得很快。"],
+["lambat","慢","Internet di sini ___.","这里的网速很慢。"],
+["mudah","容易","Soal ini sangat ___.","这道题很容易。"],
+["sulit","困难","Bahasa baru itu ___ tetapi menarik.","新语言很难，但很有趣。"],
+["cantik","漂亮","Bunga itu ___ sekali.","那朵花很漂亮。"],
+["bersih","干净","Kamarnya selalu ___.","他的房间总是很干净。"],
+["kotor","脏","Sepatumu ___.","你的鞋脏了。"],
+["dingin","冷","Air laut pagi ini ___.","今天早上的海水很凉。"],
+["panas","热","Hari ini cuaca ___.","今天天气很热。"],
+["jauh","远","Sekolahnya ___ dari rumah.","学校离家很远。"],
+["dekat","近","Toko itu ___ dengan stasiun.","那家店离车站很近。"],
+["rumah","房子","Ini ___ saya.","这是我的家。"],
+["sekolah","学校","Anak-anak pergi ke ___.","孩子们去学校。"],
+["kantor","办公室","Ayah bekerja di ___.","爸爸在办公室工作。"],
+["pasar","市场","Ibu membeli ikan di ___.","妈妈在市场买鱼。"],
+["jalan","道路","___ ini sangat ramai.","这条路很热闹。"],
+["kota","城市","Bandung adalah ___ yang sejuk.","万隆是一座凉爽的城市。"],
+["desa","村庄","Kakek tinggal di ___.","爷爷住在村里。"],
+["pantai","海滩","Kami berlibur ke ___.","我们去海边度假。"],
+["gunung","山","Mereka mendaki ___.","他们爬山。"],
+["sungai","河","Anak-anak berenang di ___.","孩子们在河里游泳。"],
+["hujan","雨","Hari ini turun ___.","今天下雨。"],
+["matahari","太阳","___ terbit di timur.","太阳从东方升起。"],
+["air","水","Saya minum ___ putih.","我喝白开水。"],
+["nasi","米饭","Orang Indonesia suka makan ___.","印尼人喜欢吃米饭。"],
+["ikan","鱼","Nenek menggoreng ___.","奶奶在煎鱼。"],
+["ayam","鸡","Saya pesan ___ goreng.","我点炸鸡。"],
+["buah","水果","Apel adalah ___.","苹果是水果。"],
+["sayur","蔬菜","Anak-anak harus makan ___.","孩子们要吃蔬菜。"],
+["kopi","咖啡","Ayah minum ___ setiap pagi.","爸爸每天早上喝咖啡。"],
+["teman","朋友","Dia ___ baik saya.","他是我的好朋友。"],
+["keluarga","家人","___ saya tinggal di Medan.","我的家人住在棉兰。"],
+["guru","老师","___ mengajar di kelas.","老师在教室里教课。"],
+["murid","学生","Semua ___ membaca buku.","所有学生都在读书。"],
+["dokter","医生","___ memeriksa pasien.","医生给病人做检查。"],
+["uang","钱","Saya tidak punya ___.","我没有钱。"],
+["waktu","时间","Maaf, saya tidak punya ___ hari ini.","抱歉，我今天没有时间。"],
+["hari","天","Satu minggu ada tujuh ___.","一周有七天。"],
+["malam","夜晚","Kami makan bersama pada ___ hari.","我们晚上一起吃饭。"],
+["pagi","早晨","Saya bangun jam enam ___.","我早上六点起床。"],
+["buku","书","Dia membaca ___ di perpustakaan.","他在图书馆看书。"],
+["pintu","门","Tolong tutup ___ itu.","请关上那扇门。"],
+["meja","桌子","Buku itu ada di atas ___.","书在桌子上。"],
+["kursi","椅子","Silakan duduk di ___ ini.","请坐在这把椅子上。"],
+["mobil","汽车","Ayah membeli ___ baru.","爸爸买了新车。"],
+["kereta","火车","Kami naik ___ ke Yogyakarta.","我们坐火车去日惹。"],
+["bandara","机场","Pesawat berangkat dari ___.","飞机从机场起飞。"],
+["terima kasih","谢谢","Ucapkan ___ kepada mereka.","请对他们说谢谢。"],
+["maaf","对不起","Saya minta ___ karena terlambat.","我因为迟到而道歉。"],
+["tolong","请（帮忙）","___ bantu saya membawa tas ini.","请帮我拿这个包。"],
+["bagus","好 / 棒","Filmnya sangat ___.","这部电影很棒。"],
+["penting","重要","Kesehatan itu ___.","健康很重要。"],
+["ramai","热闹","Pasar malam selalu ___.","夜市总是很热闹。"],
+["sepi","冷清","Jalan ini ___ pada malam hari.","这条路晚上很冷清。"],
+["berangkat","出发","Kami ___ jam lima pagi.","我们早上五点出发。"],
+["tiba","到达","Kereta akan ___ sebentar lagi.","火车马上就到。"],
+["bertemu","见面","Kita akan ___ besok.","我们明天见面。"],
+["menelepon","打电话","Dia ___ ibunya setiap hari.","他每天给妈妈打电话。"],
+["mengajar","教","Bu Ani ___ matematika.","阿尼老师教数学。"],
+["menyanyi","唱歌","Dia suka ___ di kamar mandi.","她喜欢在浴室里唱歌。"]
+];
+
+/* ===== util ===== */
+const $=id=>document.getElementById(id);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const isTouch=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;
+if(isTouch){document.body.classList.add('touch');$('ctl-d').style.display='none';$('ctl-t').style.display='block';}
+let bestScore=0;try{bestScore=+localStorage.getItem('bk-best')||0;}catch(e){}
+$('best').textContent=bestScore;
+const FONT='system-ui,-apple-system,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif';
+
+/* ===== audio ===== */
+let AC=null;
+function beep(f,d,type='square',v=.06,slide=0){try{
+  if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();
+  const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;
+  if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),AC.currentTime+d);
+  g.gain.value=v;g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);
+  o.connect(g).connect(AC.destination);o.start();o.stop(AC.currentTime+d);}catch(e){}}
+function speak(t){try{if(!window.speechSynthesis)return;const u=new SpeechSynthesisUtterance(t);u.lang='id-ID';u.rate=.85;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+
+/* ===== three.js: malam tropis, rumpun bambu, lampion ===== */
+const renderer=new THREE.WebGLRenderer({antialias:true,canvas:$('c')});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x06231f);scene.fog=new THREE.Fog(0x06231f,14,58);
+const camera=new THREE.PerspectiveCamera(72,1,.1,120);camera.rotation.order='YXZ';camera.position.set(0,1.6,0);scene.add(camera);
+function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);resize();
+
+const floor=new THREE.Mesh(new THREE.CircleGeometry(60,48),new THREE.MeshBasicMaterial({color:0x0b3a31}));floor.rotation.x=-Math.PI/2;scene.add(floor);
+const grid=new THREE.GridHelper(120,60,0xffc94d,0x14574a);grid.position.y=.01;scene.add(grid);
+const ring=new THREE.Mesh(new THREE.RingGeometry(13.5,14,64),new THREE.MeshBasicMaterial({color:0xd6202f,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=.02;scene.add(ring);
+const lanterns=[];
+for(let i=0;i<28;i++){
+  const a=i/28*Math.PI*2+Math.random()*.2,r=20+Math.random()*14,h=5+Math.random()*8;
+  const p=new THREE.Mesh(new THREE.CylinderGeometry(.3,.38,h,8),new THREE.MeshBasicMaterial({color:0x2f8f5b}));
+  p.position.set(Math.cos(a)*r,h/2,Math.sin(a)*r);scene.add(p);
+  if(i%2===0){
+    const l=new THREE.Mesh(new THREE.SphereGeometry(.8,14,10),new THREE.MeshBasicMaterial({color:0xffc94d}));
+    l.position.set(p.position.x+.9,h*.7,p.position.z);scene.add(l);lanterns.push(l);
+  }
+}
+const sg=new THREE.BufferGeometry(),sp=[];for(let i=0;i<500;i++){sp.push((Math.random()-.5)*160,10+Math.random()*50,(Math.random()-.5)*160);}
+sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));
+scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xfff4dc,size:.35})));
+const moon=new THREE.Mesh(new THREE.CircleGeometry(5,32),new THREE.MeshBasicMaterial({color:0xfff4dc,fog:false}));moon.position.set(-25,32,-70);moon.lookAt(0,0,0);scene.add(moon);
+
+/* senjata */
+const gun=new THREE.Group();
+const gb=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,.7),new THREE.MeshBasicMaterial({color:0xfff4dc}));
+const gt=new THREE.Mesh(new THREE.BoxGeometry(.13,.13,.14),new THREE.MeshBasicMaterial({color:0xd6202f}));gt.position.z=-.4;
+gun.add(gb,gt);gun.position.set(.34,-.3,-.75);camera.add(gun);
+
+/* ===== kartu target ===== */
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
+function diamond(g,cx,cy,s){g.beginPath();g.moveTo(cx,cy-s);g.lineTo(cx+s,cy);g.lineTo(cx,cy+s);g.lineTo(cx-s,cy);g.closePath();g.fill();}
+function paint(t,border){
+  const col=border||'#d6202f';
+  const g=t.canvas.getContext('2d');g.clearRect(0,0,512,256);
+  g.fillStyle='#fff4dc';rr(g,10,10,492,236,22);g.fill();
+  g.lineWidth=12;g.strokeStyle=col;rr(g,10,10,492,236,22);g.stroke();
+  g.lineWidth=3;rr(g,26,26,460,204,12);g.stroke();
+  g.fillStyle=col;[[46,46],[466,46],[46,210],[466,210]].forEach(p=>diamond(g,p[0],p[1],9));
+  g.fillStyle='#1a1410';g.textAlign='center';g.textBaseline='middle';
+  let fs=t.kind==='i'?104:96;g.font=`800 ${fs}px ${FONT}`;
+  while(g.measureText(t.label).width>380&&fs>28){fs-=4;g.font=`800 ${fs}px ${FONT}`;}
+  g.fillText(t.label,256,132);
+  t.tex.needsUpdate=true;
+}
+function makeTarget(label,kind,isAnswer){
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=256;
+  const tex=new THREE.CanvasTexture(canvas);
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(3.4,1.7),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,fog:false}));
+  const t={mesh,canvas,tex,label,kind,isAnswer,phase:Math.random()*6,baseY:0,dead:false};
+  mesh.userData.t=t;paint(t);scene.add(mesh);return t;
+}
+function disposeTarget(t){scene.remove(t.mesh);t.tex.dispose();t.mesh.material.dispose();t.mesh.geometry.dispose();}
+
+/* ===== efek ===== */
+const parts=[],tracers=[];
+const pGeo=new THREE.BoxGeometry(.14,.14,.14);
+function burst(pos,color,n=22){for(let i=0;i<n;i++){
+  const m=new THREE.Mesh(pGeo,new THREE.MeshBasicMaterial({color,transparent:true}));m.position.copy(pos);
+  scene.add(m);parts.push({m,v:new THREE.Vector3((Math.random()-.5)*7,Math.random()*5,(Math.random()-.5)*7),life:.8});}}
+function tracer(to){
+  const from=new THREE.Vector3(.34,-.28,-1);camera.localToWorld(from);
+  const g=new THREE.BufferGeometry().setFromPoints([from,to]);
+  const l=new THREE.Line(g,new THREE.LineBasicMaterial({color:0xffc94d,transparent:true}));scene.add(l);tracers.push({l,life:.12});}
+
+/* ===== state ===== */
+const S={running:false,active:false,score:0,lives:3,combo:0,correct:0,round:0,t:0,tMax:14,cool:0,energy:100,
+  yaw:0,pitch:0,pos:new THREE.Vector3(0,1.6,0),targets:[],answer:null,mode:'',missed:new Map(),recoil:0,timer:null,focus:false,total:0,speed:.6};
+const keys={};let joy={x:0,y:0};
+
+function hud(){
+  $('score').textContent=S.score;$('lvl').textContent=1+Math.floor(S.correct/5);$('cb').textContent=S.combo;$('ok').textContent=S.correct;
+  $('lives').textContent='♥'.repeat(Math.max(0,S.lives))+'♡'.repeat(Math.max(0,5-Math.max(0,S.lives)));
+}
+function toast(msg,bad){const t=$('toast');t.textContent=msg;t.className=(bad?'bad ':'')+'show';clearTimeout(toast.id);toast.id=setTimeout(()=>t.className=bad?'bad':'',1900);}
+function hurt(){beep(120,.3,'sawtooth',.1,-60);const h=$('hurt');h.style.transition='none';h.style.opacity=1;requestAnimationFrame(()=>{h.style.transition='opacity .4s';h.style.opacity=0;});}
+
+function clearTargets(){S.targets.forEach(disposeTarget);S.targets=[];}
+function newRound(){
+  clearTargets();S.round++;
+  const w=pick(W),mode=pick(['z2i','i2z','cloze']);S.answer=w;S.mode=mode;
+  const opts=[w];while(opts.length<4){const d=pick(W);if(!opts.includes(d)&&d[0]!==w[0]&&d[1]!==w[1])opts.push(d);}
+  shuffle(opts);
+  const pl=$('pl'),pt=$('pt'),ps=$('ps');ps.textContent='';pt.style.fontSize='';
+  if(mode==='z2i'){pl.textContent='射出对应的印尼语 · Tembak kata Indonesia:';pt.textContent=w[1];}
+  else if(mode==='i2z'){pl.textContent='射出正确的中文意思 · Tembak arti Mandarin:';pt.textContent=w[0];}
+  else{pl.textContent='填空 · Isi yang kosong:';pt.textContent=w[2];pt.style.fontSize='20px';ps.textContent=w[3];}
+  const offs=shuffle([-66,-22,22,66]);
+  opts.forEach((o,i)=>{
+    const t=makeTarget(mode==='i2z'?o[1]:o[0],mode==='i2z'?'z':'i',o===w);
+    const a=S.yaw+THREE.MathUtils.degToRad(offs[i]+(Math.random()-.5)*10),d=11+Math.random()*4;
+    t.baseY=1.4+Math.random()*2.4;
+    t.mesh.position.set(S.pos.x-Math.sin(a)*d,t.baseY,S.pos.z-Math.cos(a)*d);
+    S.targets.push(t);
+  });
+  S.tMax=Math.max(8,16-S.round*.2);S.t=S.tMax;S.speed=.5+Math.min(1,S.round*.03);S.active=true;
+}
+function endRound(){
+  S.active=false;
+  S.timer=setTimeout(()=>{if(S.lives<=0)gameOver();else newRound();},1250);
+}
+function fail(why,shotTarget){
+  if(!S.active)return;
+  S.combo=0;S.lives--;S.total++;S.missed.set(S.answer[0],S.answer);hurt();hud();
+  S.targets.forEach(t=>{if(t.isAnswer)paint(t,'#1fae7d');});
+  const w=S.answer;
+  toast(`${why} 答案 Jawaban: ${w[0]} = ${w[1]}`,true);
+  if(shotTarget)burst(shotTarget.mesh.position,0xd6202f);
+  endRound();
+}
+function win(t){
+  if(!S.active)return;
+  S.combo++;S.correct++;S.total++;
+  const gain=100+(S.combo-1)*25+Math.round(S.t*10);S.score+=gain;
+  const w=S.answer;let extra='';
+  if(S.correct%5===0&&S.lives<5){S.lives++;extra='  +1 ♥';}
+  burst(t.mesh.position,0x3fe0a8,30);beep(660,.12,'triangle',.09,400);setTimeout(()=>beep(990,.15,'triangle',.08),90);
+  speak(S.mode==='cloze'?w[2].replace('___',w[0]):w[0]);hud();
+  toast(`${w[0]} = ${w[1]}  (+${gain})${extra}`,false);
+  S.targets.forEach(x=>{if(x!==t){burst(x.mesh.position,0xffc94d,8);x.dead=true;x.mesh.visible=false;}});
+  t.dead=true;t.mesh.visible=false;
+  endRound();
+}
+
+/* ===== tembak ===== */
+const ray=new THREE.Raycaster();
+function fire(){
+  if(!S.running||S.cool>0)return;S.cool=.2;S.recoil=1;beep(260,.09,'square',.05,-120);
+  const fw=new THREE.Vector3();camera.getWorldDirection(fw);
+  if(!S.active){tracer(camera.position.clone().addScaledVector(fw,40));return;}
+  ray.setFromCamera({x:0,y:0},camera);
+  const hits=ray.intersectObjects(S.targets.filter(t=>!t.dead).map(t=>t.mesh));
+  if(hits.length){const t=hits[0].object.userData.t;tracer(hits[0].point);
+    if(t.isAnswer)win(t);else fail('射错了！',t);}
+  else tracer(camera.position.clone().addScaledVector(fw,40));
+}
+
+/* ===== alur game ===== */
+function start(){
+  clearTimeout(S.timer);clearTargets();
+  Object.assign(S,{score:0,lives:3,combo:0,correct:0,round:0,total:0,energy:100,active:false,yaw:0,pitch:0});
+  S.pos.set(0,1.6,0);S.missed=new Map();
+  $('start').classList.add('hide');$('over').classList.add('hide');
+  S.running=true;hud();beep(440,.1);
+  if(!isTouch)try{$('c').requestPointerLock();}catch(e){}
+  newRound();
+}
+function gameOver(){
+  S.running=false;S.active=false;clearTargets();
+  if(document.pointerLockElement)document.exitPointerLock();
+  if(S.score>bestScore){bestScore=S.score;try{localStorage.setItem('bk-best',bestScore);}catch(e){}}
+  $('best').textContent=bestScore;
+  const acc=S.total?Math.round(S.correct/S.total*100):0;
+  $('sum').textContent=`分数 ${S.score} · 答对 ${S.correct} · 正确率 ${acc}% · 最高分 ${bestScore}`;
+  const m=$('miss');m.innerHTML='';
+  if(S.missed.size){
+    const h=document.createElement('p');h.className='sub';h.style.margin='0 0 4px';h.textContent='需要复习的单词 · Kata untuk diulang:';m.appendChild(h);
+    S.missed.forEach(w=>{const d=document.createElement('div');
+      const a=document.createElement('b');a.textContent=w[0];const c=document.createElement('span');c.textContent=w[1];
+      d.append(a,c);m.appendChild(d);});
+  }else m.textContent='全部答对！Hebat!';
+  $('over').classList.remove('hide');
+}
+$('go').onclick=start;$('again').onclick=start;
+
+/* ===== input desktop ===== */
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){e.preventDefault();fire();}});
+addEventListener('keyup',e=>{keys[e.code]=false;});
+addEventListener('mousemove',e=>{if(document.pointerLockElement===$('c')&&S.running){S.yaw-=e.movementX*.0025;S.pitch=Math.max(-1.1,Math.min(1.1,S.pitch-e.movementY*.0025));}});
+$('c').addEventListener('mousedown',e=>{if(isTouch)return;if(document.pointerLockElement!==$('c')){if(S.running)$('c').requestPointerLock();}else if(e.button===0)fire();});
+
+/* ===== input sentuh ===== */
+let joyId=null,joyO=null,lookId=null,lookLast=null,lookStart=null;
+const jk=$('jk');
+document.addEventListener('touchstart',e=>{
+  if(!S.running)return;
+  for(const t of e.changedTouches){
+    if(t.target.closest('.btn'))continue;
+    if(t.clientX<innerWidth*.45&&joyId===null){joyId=t.identifier;joyO={x:t.clientX,y:t.clientY};}
+    else if(lookId===null){lookId=t.identifier;lookLast={x:t.clientX,y:t.clientY};lookStart={x:t.clientX,y:t.clientY,t:performance.now()};}
+  }
+  e.preventDefault();
+},{passive:false});
+document.addEventListener('touchmove',e=>{
+  if(!S.running)return;
+  for(const t of e.changedTouches){
+    if(t.identifier===joyId){const dx=t.clientX-joyO.x,dy=t.clientY-joyO.y,l=Math.hypot(dx,dy),m=Math.min(l,50);
+      const nx=l?dx/l*m:0,ny=l?dy/l*m:0;joy.x=nx/50;joy.y=ny/50;jk.style.transform=`translate(${nx}px,${ny}px)`;}
+    else if(t.identifier===lookId){S.yaw-=(t.clientX-lookLast.x)*.005;S.pitch=Math.max(-1.1,Math.min(1.1,S.pitch-(t.clientY-lookLast.y)*.005));lookLast={x:t.clientX,y:t.clientY};}
+  }
+  e.preventDefault();
+},{passive:false});
+function tend(e){
+  for(const t of e.changedTouches){
+    if(t.identifier===joyId){joyId=null;joy.x=joy.y=0;jk.style.transform='';}
+    else if(t.identifier===lookId){
+      if(lookStart&&performance.now()-lookStart.t<260&&Math.hypot(t.clientX-lookStart.x,t.clientY-lookStart.y)<12)fire();
+      lookId=null;
+    }
+  }
+}
+document.addEventListener('touchend',tend);document.addEventListener('touchcancel',tend);
+$('bf').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();fire();},{passive:false});
+$('bz').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();S.focus=true;},{passive:false});
+['touchend','touchcancel'].forEach(n=>$('bz').addEventListener(n,e=>{e.stopPropagation();S.focus=false;}));
+
+/* ===== loop ===== */
+let last=performance.now(),time=0;
+function update(dt){
+  time+=dt;
+  lanterns.forEach((l,i)=>{l.scale.setScalar(1+Math.sin(time*2+i)*.08);});
+  grid.position.z=(time*.4)%2;
+  if(!S.running){camera.rotation.y+=dt*.1;return;}
+  const focus=(S.focus||keys.ShiftLeft||keys.ShiftRight||keys.KeyF)&&S.energy>2;
+  if(focus)S.energy=Math.max(0,S.energy-32*dt);else S.energy=Math.min(100,S.energy+12*dt);
+  const ts=focus?.3:1;$('enf').style.width=S.energy+'%';$('focusfx').style.opacity=focus?1:0;
+  S.cool-=dt;S.recoil=Math.max(0,S.recoil-dt*8);
+  let f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-joy.y;
+  let s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x;
+  const sy=Math.sin(S.yaw),cy=Math.cos(S.yaw);
+  S.pos.x+=(-sy*f+cy*s)*6*dt;S.pos.z+=(-cy*f-sy*s)*6*dt;
+  const r=Math.hypot(S.pos.x,S.pos.z);if(r>12){S.pos.x*=12/r;S.pos.z*=12/r;}
+  camera.position.copy(S.pos);camera.rotation.y=S.yaw;camera.rotation.x=S.pitch;
+  gun.position.z=-.75+S.recoil*.12;gun.rotation.x=S.recoil*.25;
+  if(S.active){
+    S.t-=dt*ts;$('barf').style.width=Math.max(0,S.t/S.tMax*100)+'%';
+    $('barf').style.background=S.t<S.tMax*.3?'#d6202f':'#3fe0a8';
+    for(const t of S.targets){
+      const p=t.mesh.position,dx=S.pos.x-p.x,dz=S.pos.z-p.z,d=Math.hypot(dx,dz);
+      p.x+=dx/d*S.speed*dt*ts;p.z+=dz/d*S.speed*dt*ts;
+      p.y=t.baseY+Math.sin(time*2+t.phase)*.3;
+      if(d<2.4){fail('被卡片碰到了！');break;}
+    }
+    if(S.active&&S.t<=0)fail('时间到！');
+  }
+  S.targets.forEach(t=>t.mesh.lookAt(camera.position.x,t.mesh.position.y,camera.position.z));
+}
+function effects(dt){
+  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.life-=dt;p.v.y-=12*dt;p.m.position.addScaledVector(p.v,dt);
+    p.m.material.opacity=Math.max(0,p.life/.8);p.m.rotation.x+=dt*6;
+    if(p.life<=0){scene.remove(p.m);p.m.material.dispose();parts.splice(i,1);}}
+  for(let i=tracers.length-1;i>=0;i--){const t=tracers[i];t.life-=dt;t.l.material.opacity=Math.max(0,t.life/.12);
+    if(t.life<=0){scene.remove(t.l);t.l.geometry.dispose();t.l.material.dispose();tracers.splice(i,1);}}
+}
+function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;update(dt);effects(dt);renderer.render(scene,camera);}
+requestAnimationFrame(loop);
+hud();
+</script>
+</body>
+</html>
